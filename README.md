@@ -12,3 +12,23 @@ And you're done...
 To access the library's functions use `libdiscord.<the function>(<parameters>)`
 
 Also you don't need to add `using libdiscord;`
+
+## Documentation
+----------------
+#### libdiscord.SendMsg
+
+Sends a message to `channelID` and returns the response
+
+##### Parameters:
+`token`: the token of the account used to send messages
+
+`channelID`: the ID of the channel where messages are sent
+
+`msg`: the message to send
+
+##### Example:
+```Console.Write("Message: ");
+string input = Console.ReadLine();
+string response = libdiscord.SendMsg("<example token>", "<example id>", input);
+Console.WriteLine(response);
+```

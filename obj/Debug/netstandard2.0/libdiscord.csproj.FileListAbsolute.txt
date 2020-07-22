@@ -1,0 +1,9 @@
+C:\Users\KomradeKat\source\repos\libdiscord\bin\Debug\netstandard2.0\libdiscord.deps.json
+C:\Users\KomradeKat\source\repos\libdiscord\bin\Debug\netstandard2.0\libdiscord.dll
+C:\Users\KomradeKat\source\repos\libdiscord\obj\Debug\netstandard2.0\libdiscord.csprojAssemblyReference.cache
+C:\Users\KomradeKat\source\repos\libdiscord\obj\Debug\netstandard2.0\libdiscord.AssemblyInfoInputs.cache
+C:\Users\KomradeKat\source\repos\libdiscord\obj\Debug\netstandard2.0\libdiscord.AssemblyInfo.cs
+C:\Users\KomradeKat\source\repos\libdiscord\bin\Debug\netstandard2.0\libdiscord.pdb
+C:\Users\KomradeKat\source\repos\libdiscord\obj\Debug\netstandard2.0\libdiscord.csproj.CoreCompileInputs.cache
+C:\Users\KomradeKat\source\repos\libdiscord\obj\Debug\netstandard2.0\libdiscord.dll
+C:\Users\KomradeKat\source\repos\libdiscord\obj\Debug\netstandard2.0\libdiscord.pdb

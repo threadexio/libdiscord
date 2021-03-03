@@ -3,26 +3,96 @@ using System.Text.Json;
 using System.Net.Http;
 using System.Text;
 using System.Web;
-using System;
 
-public class libdiscord
+public static class libdiscord
 {
-	// Create a public HttpClient so you can
-	// access it from within the project
-	public static readonly HttpClient client = new HttpClient();
+	public static long ApiVer = 8;
 
-	public static string POST(string url, Dictionary<string, string> content, string token)
+	public static readonly string _LibVer = "v1.0.0";
+
+	public enum STATUS
+	{
+		online,
+		idle,
+		dnd,
+		invisible
+	}
+
+	private enum METHODS
     {
+		GET,
+		PUT,
+		POST,
+		PATCH,
+		DELETE,
+		OPTIONS
+	}
 
-		// Create the request
-		HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+	public class DiscordResponse
+    {
+		public int status;
+		public string json;
+		public string reason;
+		public bool success;
+		
+		public DiscordResponse(HttpResponseMessage r)
+        {
+			this.status = (int)r.StatusCode;
+			this.json = r.Content.ReadAsStringAsync().Result;
+			this.reason = r.ReasonPhrase;
+			this.success = r.IsSuccessStatusCode;
+        }
+    }
 
-		if (content != null)
+	private static DiscordResponse Send(METHODS method, string path, string json, string token)
+    {
+		HttpClient client;
+		HttpRequestMessage request;
+
+		string url = $"https://discord.com/api/" + path;
+
+		// This is bad but I can't think of any other way to implement
+		// multi-method support
+		switch(method)
+        {
+			case METHODS.GET:
+				client = new HttpClient();
+				request = new HttpRequestMessage(HttpMethod.Get, url);
+				break;
+
+			case METHODS.PUT:
+				client = new HttpClient();
+				request = new HttpRequestMessage(HttpMethod.Put, url);
+				break;
+
+			case METHODS.POST:
+				client = new HttpClient();
+				request = new HttpRequestMessage(HttpMethod.Post, url);
+				break;
+
+			case METHODS.PATCH:
+				client = new HttpClient();
+				request = new HttpRequestMessage(new HttpMethod("PATCH"), url);
+				break;
+
+			case METHODS.DELETE:
+				client = new HttpClient();
+				request = new HttpRequestMessage(HttpMethod.Delete, url);
+				break;
+
+			case METHODS.OPTIONS:
+				client = new HttpClient();
+				request = new HttpRequestMessage(HttpMethod.Options, url);
+				break;
+
+			default:
+				client = new HttpClient();
+				request = new HttpRequestMessage(HttpMethod.Post, url);
+				break;
+		}
+
+		if (json != null)
 		{
-			// Make the directory into json
-			var json = JsonSerializer.Serialize(content);
-
-			// Add the content to the request
 			client.DefaultRequestHeaders.Accept.Add(
 				new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")
 			);
@@ -32,29 +102,47 @@ public class libdiscord
 		// Add the 'authorisation' header
 		request.Headers.Add("authorization", token);
 
-		// Send the request and return the result as a string
-		var response = client.SendAsync(request).Result;
-		return response.ToString();
+		// Send the request and return the result as response
+		return new DiscordResponse(client.SendAsync(request).Result);
 	}
 
-	// Function to send message and return the response
-	public static string SendMsg(string token, string channelID, string msg)
+	public static DiscordResponse GetInfo(string token)
+    {
+		return Send(
+			METHODS.GET,
+			$"v{ApiVer}/users/@me",
+			null,
+			token
+		);
+    }
+
+	public static DiscordResponse GetMessages(string token, long channelid)
 	{
-		string url = $"https://discordapp.com/api/v6/channels/{channelID}/messages";
-		
-		// Create the request content
+		return Send(
+			METHODS.GET,
+			$"v{ApiVer}/channels/{channelid.ToString()}/messages",
+			null,
+			token
+		);
+    }
+
+	public static DiscordResponse SendMessage(string token, long channelid, string msg, bool tts = false)
+	{	
 		var content = new Dictionary<string, string>{
 			{ "content" , msg },
-			{ "tts" , "false"}
+			{ "tts" , $"{tts.ToString().ToLower()}"}
 		};
 		
-		return POST(url, content, token);
+		return Send(
+			METHODS. POST,
+            $"v{ApiVer}/channels/{channelid.ToString()}/messages",
+			JsonSerializer.Serialize(content),
+            token
+		);
 	}
 
-	public static string SendFriendRequest(string token, string user)
+	public static DiscordResponse SendFriendRequest(string token, string user)
 	{
-		string url = "https://discord.com/api/v6/users/@me/relationships";
-
 		string[] nametag = user.Split('#');
 
 		var content = new Dictionary<string, string>
@@ -63,15 +151,89 @@ public class libdiscord
 			{ "discriminator", nametag[1] }
 		};
 
-		return POST(url, content, token);
-    }
+		return Send(
+			METHODS.POST,
+            $"v{ApiVer}/users/@me/relationships",
+			JsonSerializer.Serialize(content),
+            token
+		);
+	}
 
-	public static string JoinServer(string token, string invite)
+	public static DiscordResponse JoinServer(string token, string invite)
     {
 		string inviteCode = invite.Replace("https://discord.gg/", "");
 
-		string url = $"https://discord.com/api/v6/invites/{inviteCode}?inputValue={HttpUtility.UrlEncode(invite)}";
-
-		return libdiscord.POST(url, null, token);
+		return Send(
+			METHODS.POST,
+            $"v{ApiVer}/invites/{inviteCode}?inputValue={HttpUtility.UrlEncode(invite)}",
+            null,
+            token
+		);
 	}
+
+	public static DiscordResponse ChangeNickName(string token, long serverid, string nick)
+    {
+		var content = new Dictionary<string, string>
+		{
+			{ "nick", nick }
+		};
+
+		return Send(
+			METHODS.PATCH,
+			$"v{ApiVer}/guilds/{serverid.ToString()}/members/@me/nick",
+			JsonSerializer.Serialize(content),
+			token
+		);
+	}
+
+	public static DiscordResponse ChangeStatus(string token, STATUS status)
+    {
+		var content = new Dictionary<string, string>
+		{
+			{ "status", status.ToString() }
+		};
+
+		return Send(
+			METHODS.PATCH,
+			$"v{ApiVer}/users/@me/settings",
+			JsonSerializer.Serialize(content),
+			token
+		);
+	}
+
+	public static DiscordResponse ChangeStatusMessage(string token, string msg)
+    {
+		var content = new Dictionary<string, Dictionary<string, string>>
+		{
+			{ "custom_status", new Dictionary<string, string> { { "text", msg } } }
+		};
+
+		return Send(
+			METHODS.PATCH,
+			$"v{ApiVer}/users/@me/settings",
+			JsonSerializer.Serialize(content),
+			token
+		);
+		
+	}
+
+	public static DiscordResponse ChangeSetting(string token, Dictionary<string, string> content)
+    {
+		return Send(
+			METHODS.PATCH,
+			$"v{ApiVer}/users/@me/settings",
+			JsonSerializer.Serialize(content),
+			token
+		);
+    }
+
+	public static DiscordResponse DeleteMessage(string token, long channelid, long messageid)
+    {
+		return Send(
+			METHODS.DELETE,
+			$"v{ApiVer}/channels/{channelid.ToString()}/messages/{messageid.ToString()}",
+			null,
+			token
+		);
+    }
 }
